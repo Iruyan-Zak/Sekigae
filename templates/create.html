@@ -5,23 +5,17 @@
     <title>新しい部屋を作る</title>
 </head>
 <body>
-    <p>部屋の大きさを指定してください。</p>
-    <form>
-        <input id="width" title="width" type="text">
-        <input id="height" title="height" type="text">
-    </form>
+    <form action="{{ url_for('create') }}" method="post">
+        <p>部屋の大きさを指定してください。</p>
+        <input id="rows" title="rows" name="rows" type="text">
+        <input id="columns" title="columns" name="rows" type="text">
 
         <p>使わない座席の番号を指定してください。</p>
-    <form>
-        <input id="unused_seat" title="width" type="text">
-    </form>
+        <input id="unused_seats" title="unused_seats" name="unused_seats" type="text">
 
         <p>初期配置を指定してください。</p>
-    <form>
-        <input id="positions" title="positions" type="text">
-    </form>
+        <textarea id="positions" cols="32" rows="16" name="positions" title="positions" type="text"></textarea>
 
-    <form>
         <button id="submit" name="submit" type="submit">部屋を作成</button>
     </form>
 </body>
