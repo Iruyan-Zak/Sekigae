@@ -5,21 +5,22 @@ import ast
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
 db = SQLAlchemy(app)
-db.create_all()
 
 
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     rows = db.Column(db.Integer)
     columns = db.Column(db.Integer)
-    unused_seats = db.Column(db.PickleType)
-#     seats = db.relationship('seat', backref='room')
+    # unused_seats = db.Column(db.PickleType)
+    persons = db.relationship('Person', backref='room')
     commands = db.relationship('Command', backref='room')
 
-    def __init__(self, rows, columns, unused_seats):
+    def __init__(self, rows, columns):
         self.rows = rows
         self.columns = columns
-        self.unused_seats = unused_seats
+        self.persons = []
+        self.commands = []
+        # self.unused_seats = unused_seats
 
 
 # class Seat(db.Model):
@@ -33,13 +34,14 @@ class Room(db.Model):
 
 class Person(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-#     seat_id = db.Column(db.Integer, db.ForeignKey('seat.id'))
+    room_id = db.Column(db.Integer, db.ForeignKey('room.id'))
     index = db.Column(db.Integer)
     name = db.Column(db.String(32))
 
-    def __init__(self, index, name):
+    def __init__(self, index, name, room_id):
         self.index = index
         self.name = name
+        self.room_id = room_id
 
 
 class Command(db.Model):
@@ -50,8 +52,8 @@ class Command(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     room_id = db.Column(db.Integer, db.ForeignKey('room.id'))
     op = db.Column(db.Integer)
-    person1 = db.relationship('Person', backref='command', uselist=False)
-    person2 = db.relationship('Person', backref='command', uselist=False)
+    pos1 = db.Column(db.Integer)
+    pos2 = db.Column(db.Integer)
 
 
 @app.route('/')
@@ -75,24 +77,25 @@ def create():
     columns = int(columns)
     positions = iter(positions.split('\n'))
     unused_seats = ast.literal_eval(unused_seats)
-    room = Room(rows, columns, unused_seats)
-    db.session.add(room)
-    print("OK.")
+    room = Room(rows, columns)
     for i in range(0, rows * columns):
         if i not in unused_seats:
             # seat = Seat(i)
             # seat.room_id = room.id
-            person = Person(i, next(positions))
-            person.room_id = room.id
+            print(room.id)
+            person = Person(i, next(positions), room.id)
+            # person.room_id = room.id
+            room.persons.append(person)
             db.session.add(person)
             # db.session.add(seat)
 
+    db.session.add(room)
     db.session.commit()
     # except:
     #     return redirect('/create')
     print("OK.")
 
-    return redirect(url_for('/rooms/{0}'.format(room.id)))
+    return redirect(url_for('rooms', room_id=room.id))
 
 
 @app.route('/rooms/<room_id>')
@@ -102,4 +105,5 @@ def rooms(room_id):
     return render_template("rooms.html", room=room, persons=persons)
 
 if __name__ == '__main__':
+    db.create_all()
     app.run()
