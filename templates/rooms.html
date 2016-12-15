@@ -6,19 +6,9 @@
 </head>
 <body>
 <div id="seats">
-    <table>
-        {% for i in range(0, room.rows) %}
-        <tr>
-            {% for j in range(0, room.columns) %}
-            <td>
-            {% if i * room.columns + j == persons[0].index %}
-                {% persons.pop(0).name %}
-            {% endif %}
-            </td>
-            {% endfor %}
-        </tr>
-        {% endfor %}
-    </table>
+    {% for s in seats %}
+        {{ s }}
+    {% endfor %}
 </div>
 </body>
 </html>

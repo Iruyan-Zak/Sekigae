@@ -12,14 +12,14 @@ class Room(db.Model):
     rows = db.Column(db.Integer)
     columns = db.Column(db.Integer)
     # unused_seats = db.Column(db.PickleType)
-    persons = db.relationship('Person', backref='room')
-    commands = db.relationship('Command', backref='room')
+    # persons = db.relationship('Person', backref='room')
+    # commands = db.relationship('Command', backref='room')
 
     def __init__(self, rows, columns):
         self.rows = rows
         self.columns = columns
-        self.persons = []
-        self.commands = []
+        # self.persons = []
+        # self.commands = []
         # self.unused_seats = unused_seats
 
 
@@ -34,9 +34,9 @@ class Room(db.Model):
 
 class Person(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    room_id = db.Column(db.Integer, db.ForeignKey('room.id'))
     index = db.Column(db.Integer)
     name = db.Column(db.String(32))
+    room_id = db.Column(db.Integer)  # , db.ForeignKey('room.id'))
 
     def __init__(self, index, name, room_id):
         self.index = index
@@ -78,18 +78,19 @@ def create():
     positions = iter(positions.split('\n'))
     unused_seats = ast.literal_eval(unused_seats)
     room = Room(rows, columns)
+    db.session.add(room)
+    db.session.commit()
+
     for i in range(0, rows * columns):
         if i not in unused_seats:
             # seat = Seat(i)
             # seat.room_id = room.id
-            print(room.id)
             person = Person(i, next(positions), room.id)
             # person.room_id = room.id
-            room.persons.append(person)
+            # room.persons.append(person)
             db.session.add(person)
             # db.session.add(seat)
 
-    db.session.add(room)
     db.session.commit()
     # except:
     #     return redirect('/create')
@@ -101,8 +102,16 @@ def create():
 @app.route('/rooms/<room_id>')
 def rooms(room_id):
     room = Room.query.filter_by(id=room_id).first()
-    persons = Person.query.filter_by(room_id=room.id).all().sort(lambda p: p.index)
-    return render_template("rooms.html", room=room, persons=persons)
+    persons = Person.query.filter_by(room_id=room_id).all()
+    persons = sorted(persons, key=lambda p: p.index)
+    l = []
+    for i in range(0, room.rows*room.columns):
+        if persons and i == persons[0].index:
+            print(persons[0].name)
+            l.append(persons.pop(0).name)
+        else:
+            l.append("Fail")
+    return render_template("rooms.html", room=room, seats=l)
 
 if __name__ == '__main__':
     db.create_all()
