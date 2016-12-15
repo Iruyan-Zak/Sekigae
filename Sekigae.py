@@ -67,8 +67,6 @@ def create():
     print(request.form)
     rows = request.form['rows']
     columns = request.form['columns']
-    abort(404)
-    # 下の行で 400 Bad request が出る。
     unused_seats = request.form['unused_seats']
     positions = request.form['positions']
 
@@ -79,6 +77,7 @@ def create():
     unused_seats = ast.literal_eval(unused_seats)
     room = Room(rows, columns, unused_seats)
     db.session.add(room)
+    print("OK.")
     for i in range(0, rows * columns):
         if i not in unused_seats:
             # seat = Seat(i)
@@ -91,6 +90,7 @@ def create():
     db.session.commit()
     # except:
     #     return redirect('/create')
+    print("OK.")
 
     return redirect(url_for('/rooms/{0}'.format(room.id)))
 
