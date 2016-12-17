@@ -11,32 +11,17 @@ class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     rows = db.Column(db.Integer)
     columns = db.Column(db.Integer)
-    # unused_seats = db.Column(db.PickleType)
-    # persons = db.relationship('Person', backref='room')
-    # commands = db.relationship('Command', backref='room')
 
     def __init__(self, rows, columns):
         self.rows = rows
         self.columns = columns
-        # self.persons = []
-        # self.commands = []
-        # self.unused_seats = unused_seats
 
-
-# class Seat(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     room_id = db.Column(db.Integer, db.ForeignKey('room.id'))
-#     index = db.Column(db.Integer)
-#     person = db.relationship('Person', backref='seat', uselist=False)
-#
-#     def __init__(self, index):
-#         self.index = index
 
 class Person(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     index = db.Column(db.Integer)
     name = db.Column(db.String(32))
-    room_id = db.Column(db.Integer)  # , db.ForeignKey('room.id'))
+    room_id = db.Column(db.Integer)
 
     def __init__(self, index, name, room_id):
         self.index = index
@@ -52,8 +37,14 @@ class Command(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     room_id = db.Column(db.Integer, db.ForeignKey('room.id'))
     op = db.Column(db.Integer)
-    pos1 = db.Column(db.Integer)
-    pos2 = db.Column(db.Integer)
+    pos1 = db.Column(db.String(32))
+    pos2 = db.Column(db.String(32))
+
+    def __init__(self, room_id, op, pos1, pos2):
+        self.room_id = room_id
+        self.op = op
+        self.pos1 = pos1
+        self.pos2 = pos2
 
 
 @app.route('/')
@@ -75,7 +66,7 @@ def create():
     # try:
     rows = int(rows)
     columns = int(columns)
-    positions = iter(positions.split('\n'))
+    positions = (l for l in positions.splitlines() if l)
     unused_seats = ast.literal_eval(unused_seats)
     room = Room(rows, columns)
     db.session.add(room)
@@ -83,13 +74,8 @@ def create():
 
     for i in range(0, rows * columns):
         if i not in unused_seats:
-            # seat = Seat(i)
-            # seat.room_id = room.id
             person = Person(i, next(positions), room.id)
-            # person.room_id = room.id
-            # room.persons.append(person)
             db.session.add(person)
-            # db.session.add(seat)
 
     db.session.commit()
     # except:
@@ -99,9 +85,46 @@ def create():
     return redirect(url_for('rooms', room_id=room.id))
 
 
-@app.route('/rooms/<room_id>')
+@app.route('/rooms/<room_id>', methods=['GET', 'POST'])
 def rooms(room_id):
+    if request.method == 'POST':
+        return post_rooms(room_id)
+    return get_rooms(room_id)
+
+
+def post_rooms(room_id):
+    print(request.form)
+    op = request.form['command']
+    pos1_name = request.form['pos1']
+    pos2_name = request.form['pos2']
+
+    # try
+    if pos1_name == pos2_name:
+        abort(400)
+
+    pos2 = Person.query.filter_by(room_id=room_id).filter_by(name=pos2_name).first()
+    if not pos2:
+        abort(400)
+
+    if op == "decline":
+        pos1_name = ""
+    else:
+        pos1 = Person.query.filter_by(room_id=room_id).filter_by(name=pos1_name).first()
+        if not pos1:
+            abort(400)
+
+    cmd = Command(room_id, post_rooms.cmd_num[op], pos1_name, pos2_name)
+    db.session.add(cmd)
+    db.session.commit()
+    return redirect(url_for('rooms', room_id=room_id))
+
+
+post_rooms.cmd_num = {"change": 0, "request": 1, "decline": 2}
+
+
+def get_rooms(room_id):
     room = Room.query.filter_by(id=room_id).first()
+
     persons = Person.query.filter_by(room_id=room_id).all()
     persons = sorted(persons, key=lambda p: p.index)
     l = []
@@ -111,7 +134,14 @@ def rooms(room_id):
             l.append(persons.pop(0).name)
         else:
             l.append("Fail")
-    return render_template("rooms.html", room=room, seats=l)
+    commands = Command.query.filter_by(room_id=room_id).all()
+    for c in commands:
+        c.op = get_rooms.cmd[c.op]
+
+    return render_template("rooms.html", room=room, seats=l, commands=commands)
+
+
+get_rooms.cmd = ["change", "request", "decline"]
 
 if __name__ == '__main__':
     db.create_all()
