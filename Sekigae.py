@@ -134,6 +134,7 @@ def get_rooms(room_id):
             l.append(persons.pop(0).name)
         else:
             l.append("Fail")
+    l = [l[i:i+room.rows] for i in range(0, len(l), room.rows)]
     commands = Command.query.filter_by(room_id=room_id).all()
     for c in commands:
         c.op = get_rooms.cmd[c.op]

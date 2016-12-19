@@ -7,8 +7,8 @@
 <body>
     <form action="{{ url_for('create') }}" method="post">
         <p>部屋の大きさを指定してください。</p>
-        <input id="rows" title="rows" name="rows" type="text">
-        <input id="columns" title="columns" name="columns" type="text">
+        <input id="rows" title="rows" name="rows" type="text" value="6">
+        <input id="columns" title="columns" name="columns" type="text" value="5">
 
         <p>使わない座席の番号を指定してください。</p>
         <input id="unused_seats" title="unused_seats" name="unused_seats" type="text">

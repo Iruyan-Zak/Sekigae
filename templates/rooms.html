@@ -3,37 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <title>部屋の状況</title>
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Cache-Control" content="no-cache">
-
-<script
-  src="https://code.jquery.com/jquery-3.1.1.min.js"
-  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
-  crossorigin="anonymous"></script>
-<script src="../static/rooms.js?cb="></script>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.1/build/pure-min.css">
+    <link rel="stylesheet" href="../static/css/room.css">
 </head>
 
 <body>
-<div id="seats">
-    {% for s in seats %}
-        {{ s }}
-    {% endfor %}
+<div class="pure-g">
+    <div class="">
+        <table class="pure-table pure-table-bordered">
+            {% for s in seats %}
+                <tr>
+                    {% for p in s %}
+                        <td>{{ p }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+        </div>
+        <div class="pure-u-1-24">
+        </div>
+        <div class="pure-u-13-24">
+        <form class="pure-form" action="./{{ room.id }}" method="post">
+            <p>
+                <label class="pure-radio"><input type="radio" name="command" value="change" checked="checked"> 席を交換する</label>
+                <label class="pure-radio"><input type="radio" name="command" value="request"> 場所替えを要請する</label>
+                <label class="pure-radio"><input type="radio" name="command" value="decline"> 場所替えを断る</label>
+            </p>
+            <input type="text" title="pos1" name="pos1" placeholder="名前">
+            <span id="s1">と</span>
+            <input type="text" title="pos2" name="pos2" placeholder="名前">
+            <span id="s2">が席を交換する</span>
+            <p>
+                <button id="submit" class="pure-button pure-button-primary" name="submit" type="submit">送信</button>
+            </p>
+        </form>
+        <div id="commands">
+            <table class="pure-table pure-table-horizontal">
+                <tr>
+                    <th>ID</th>
+                    <th>種別</th>
+                    <th>対象1</th>
+                    <th>対象2</th>
+                </tr>
+                {% for c in commands %}
+                    <tr>
+                        <td>{{ c.id }}</td>
+                        <td>{{ c.op }}</td>
+                        <td>{{ c.pos1 }}</td>
+                        <td>{{ c.pos2 }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
 </div>
-<form action="./{{ room.id }}" method="post">
-    <p>
-    <label><input type="radio" name="command" value="change" checked="checked"> 席を交換する</label>
-    <label><input type="radio" name="command" value="request"> 場所替えを要請する</label>
-    <label><input type="radio" name="command" value="decline"> 場所替えを断る</label>
-    </p>
-    <p>
-        <input type="text" title="pos1" name="pos1">
-        <span id="s1">と</span>
-        <input type="text" title="pos2" name="pos2">
-        <span id="s2">が席を交換する</span>
-    </p>
-    <p>
-        <button id="submit" name="submit" type="submit">部屋を作成</button>
-    </p>
-</form>
+<script
+        src="https://code.jquery.com/jquery-3.1.1.min.js"
+        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+        crossorigin="anonymous"></script>
+<script src="../static/js/rooms.js"></script>
 </body>
 </html>
