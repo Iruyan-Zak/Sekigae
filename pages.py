@@ -1,5 +1,4 @@
 from flask import render_template, redirect, request, url_for, abort
-import ast
 from Sekigae import app, db
 from models import *
 
@@ -21,10 +20,11 @@ def create():
     positions = request.form['positions']
 
     # try:
+    from util import extract_numbers
     rows = int(rows)
     columns = int(columns)
     positions = (l for l in positions.splitlines() if l)
-    unused_seats = ast.literal_eval(unused_seats)
+    unused_seats = extract_numbers(unused_seats)
     room = Room(rows, columns)
     db.session.add(room)
     db.session.commit()
