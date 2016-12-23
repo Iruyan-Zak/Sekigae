@@ -27,7 +27,7 @@ def create():
     unused_seats = extract_numbers(unused_seats)
     room = Room(rows, columns)
     db.session.add(room)
-    db.session.commit()
+    db.session.flush()
 
     for i in range(0, rows * columns):
         if i not in unused_seats:
