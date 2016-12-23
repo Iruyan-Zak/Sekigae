@@ -51,32 +51,52 @@ def rooms(room_id):
 
 def post_rooms(room_id):
     print(request.form)
-    op = request.form['command']
+    cmd_name = request.form['command']
     pos1_name = request.form['pos1']
     pos2_name = request.form['pos2']
 
-    # try
-    if pos1_name == pos2_name:
-        abort(400)
+    op = Command.to_op[cmd_name]
+    cmd = Command(room_id, op, pos1_name, pos2_name, op != Command.DECLINE)
 
-    pos2 = Person.query.filter_by(room_id=room_id).filter_by(name=pos2_name).first()
-    if not pos2:
-        abort(400)
-
-    if op == "decline":
-        pos1_name = ""
-    else:
-        pos1 = Person.query.filter_by(room_id=room_id).filter_by(name=pos1_name).first()
-        if not pos1:
+    if op == Command.DECLINE:
+        try:
+            request_id = int(pos2_name)
+        except ValueError:
+            print("Failed to transfer id.")
+            abort(400)
+            return
+        update_count = Command.query.filter_by(op=Command.REQUEST, id=request_id, available=True)\
+            .update({'available': False})
+        if update_count == 0:
+            print("Failed to decline.")
             abort(400)
 
-    cmd = Command(room_id, post_rooms.cmd_num[op], pos1_name, pos2_name)
+    else:
+        if pos1_name == pos2_name:
+            print("Same person's command.")
+            abort(400)
+
+        pos1 = Person.query.filter_by(room_id=room_id, name=pos1_name).first()
+        pos2 = Person.query.filter_by(room_id=room_id, name=pos2_name).first()
+        if not pos1 or not pos2:
+            print("Person does not exist.")
+            abort(400)
+
+        if op == Command.CHANGE:
+            from sqlalchemy import or_
+            Command.query.filter_by(op=Command.REQUEST, available=True)\
+                .filter(or_(Command.pos1 == pos1_name,
+                            Command.pos2 == pos1_name,
+                            Command.pos1 == pos2_name,
+                            Command.pos2 == pos2_name))\
+                .update({'available': False})
+            p1_index = pos1.index
+            Person.query.filter_by(id=pos1.id).update({'index': pos2.index})
+            Person.query.filter_by(id=pos2.id).update({'index': p1_index})
+
     db.session.add(cmd)
     db.session.commit()
     return redirect(url_for('rooms', room_id=room_id))
-
-
-post_rooms.cmd_num = {"change": 0, "request": 1, "decline": 2}
 
 
 def get_rooms(room_id):
@@ -84,6 +104,7 @@ def get_rooms(room_id):
 
     persons = Person.query.filter_by(room_id=room_id).all()
     persons.sort(key=lambda p: p.index)
+    print(persons)
     l = []
     for i in range(1, room.rows * room.columns + 1):
         if persons and i == persons[0].index:
@@ -91,11 +112,10 @@ def get_rooms(room_id):
             l.append(persons.pop(0).name)
         else:
             l.append("Unused")
+
+    print(list(Command.query.filter_by(available=True).all()))
     commands = Command.query.filter_by(room_id=room_id).all()
     for c in commands:
-        c.op = get_rooms.cmd[c.op]
+        c.op = Command.from_op[c.op]
 
     return render_template("rooms.html", room=room, seats=l, commands=commands)
-
-
-get_rooms.cmd = ["change", "request", "decline"]
