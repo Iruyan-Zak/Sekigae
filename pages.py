@@ -29,7 +29,7 @@ def create():
     db.session.add(room)
     db.session.flush()
 
-    for i in range(0, rows * columns):
+    for i in range(1, rows * columns + 1):
         if i not in unused_seats:
             person = Person(i, next(positions), room.id)
             db.session.add(person)
@@ -83,14 +83,14 @@ def get_rooms(room_id):
     room = Room.query.filter_by(id=room_id).first()
 
     persons = Person.query.filter_by(room_id=room_id).all()
-    persons = sorted(persons, key=lambda p: p.index)
+    persons.sort(key=lambda p: p.index)
     l = []
-    for i in range(0, room.rows*room.columns):
+    for i in range(1, room.rows * room.columns + 1):
         if persons and i == persons[0].index:
             print(persons[0].name)
             l.append(persons.pop(0).name)
         else:
-            l.append("Fail")
+            l.append("Unused")
     commands = Command.query.filter_by(room_id=room_id).all()
     for c in commands:
         c.op = get_rooms.cmd[c.op]
